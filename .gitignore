@@ -14,3 +14,6 @@
 
 # OS
 .DS_Store
+
+# Proyecto fuera de este repo (mantener solo en local si aplica)
+cmica-medication-catalog/
