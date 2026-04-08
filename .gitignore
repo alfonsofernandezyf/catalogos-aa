@@ -1,0 +1,16 @@
+# Secretos locales — nunca commitear
+.env
+.env.*
+!.env.example
+
+# Artefactos de build (Vite inyecta VITE_*; no subir bundles con claves)
+**/dist/
+
+# Dependencias
+**/node_modules/
+
+# IDE
+.cursor/
+
+# OS
+.DS_Store

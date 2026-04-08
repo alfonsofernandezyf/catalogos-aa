@@ -70,7 +70,18 @@ const groupNames = {
 function App() {
   // State
   const [allMedications, setAllMedications] = useState([])
-  const [selectedIds, setSelectedIds] = useState(new Set())
+  const [selectedIds, setSelectedIds] = useState(() => {
+    try {
+      const raw = localStorage.getItem('cientifi_ca_selected_atc')
+      if (raw) {
+        const a = JSON.parse(raw)
+        if (Array.isArray(a)) return new Set(a)
+      }
+    } catch {
+      /* ignore */
+    }
+    return new Set()
+  })
   const [favorites, setFavorites] = useState(new Set())
   const [customMedications, setCustomMedications] = useState([])
   
@@ -103,6 +114,8 @@ function App() {
   
   const fileInputRef = useRef(null)
   const mergeInputRef = useRef(null)
+
+  const [saveCatalogBusy, setSaveCatalogBusy] = useState(false)
 
   // Load medications on mount
   useEffect(() => {
@@ -137,6 +150,11 @@ function App() {
   useEffect(() => {
     localStorage.setItem('cientifi_ca_user_name', userName)
   }, [userName])
+
+  // Persistir selección (códigos ATC marcados)
+  useEffect(() => {
+    localStorage.setItem('cientifi_ca_selected_atc', JSON.stringify([...selectedIds]))
+  }, [selectedIds])
 
   // Get available sub-groups based on selected group
   const availableSubgroups = useMemo(() => {
@@ -395,17 +413,22 @@ function App() {
   }
 
   const handleSaveToSupabase = async () => {
-    if (!isSupabaseConfigured()) {
-      alert('Supabase no está configurado. Guardando localmente...')
-      localStorage.setItem('cientifi_ca_medications', JSON.stringify(allMedications))
-      return
-    }
-    
-    const { error } = await saveMedications(allMedications)
-    if (error) {
-      alert('Error al guardar: ' + error.message)
-    } else {
-      alert('Medicamentos guardados exitosamente en Supabase')
+    setSaveCatalogBusy(true)
+    try {
+      if (!isSupabaseConfigured()) {
+        alert('Supabase no está configurado. Catálogo guardado solo en este navegador.')
+        localStorage.setItem('cientifi_ca_medications', JSON.stringify(allMedications))
+        return
+      }
+
+      const { error } = await saveMedications(allMedications)
+      if (error) {
+        alert('Error al guardar: ' + error.message)
+      } else {
+        alert('Medicamentos guardados en Supabase (tabla medications).')
+      }
+    } finally {
+      setSaveCatalogBusy(false)
     }
   }
 
@@ -432,6 +455,19 @@ function App() {
             </button>
             <button className="btn btn-secondary" onClick={() => setShowImportModal(true)}>
               <UploadIcon /> Importar
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={handleSaveToSupabase}
+              disabled={saveCatalogBusy}
+              title={
+                isSupabaseConfigured()
+                  ? 'Sube el catálogo actual a Supabase (medications)'
+                  : 'Sin Supabase: guarda una copia local del catálogo'
+              }
+            >
+              {saveCatalogBusy ? '…' : '☁️'} Guardar catálogo
             </button>
             <button 
               className="btn btn-primary" 

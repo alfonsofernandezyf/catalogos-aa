@@ -3,12 +3,40 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || ''
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ''
 
-// Check if Supabase is configured before creating client
+function decodeJwtPayload(token) {
+  if (!token || typeof token !== 'string' || !token.startsWith('eyJ')) return null
+  try {
+    const parts = token.split('.')
+    if (parts.length < 2) return null
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const pad = base64.length % 4
+    const padded = pad ? base64 + '='.repeat(4 - pad) : base64
+    const json = atob(padded)
+    return JSON.parse(json)
+  } catch {
+    return null
+  }
+}
+
+function isServiceRoleKey(key) {
+  const p = decodeJwtPayload(key)
+  return Boolean(p && p.role === 'service_role')
+}
+
+function isPlatformSecretKey(key) {
+  return typeof key === 'string' && key.trim().startsWith('sb_secret_')
+}
+
+/** En el navegador: publicable (sb_publishable_), anon JWT, o legacy anon — nunca sb_secret_ ni service_role JWT. */
 const isConfigured = () => {
-  return supabaseUrl && supabaseAnonKey && 
-         supabaseUrl.startsWith('https://') &&
-         !supabaseUrl.includes('your-project') && 
-         !supabaseAnonKey.includes('your-anon-key')
+  const u = supabaseUrl.trim()
+  const k = supabaseAnonKey.trim()
+  if (!u || !k) return false
+  if (!u.startsWith('https://')) return false
+  if (u.includes('your-project') || k.includes('your-anon-key')) return false
+  if (isPlatformSecretKey(k)) return false
+  if (isServiceRoleKey(k)) return false
+  return true
 }
 
 // Only create client if configured
