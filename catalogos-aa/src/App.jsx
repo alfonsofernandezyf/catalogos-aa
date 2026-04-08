@@ -52,6 +52,12 @@ const CloseIcon = () => (
   </svg>
 )
 
+const ChevronDownIcon = () => (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <polyline points="6 9 12 15 18 9"/>
+  </svg>
+)
+
 /** Incluye niveles del dataset (p. ej. Variable) además de la escala estándar */
 const ALLERGEN_CUSTOM_SEVERITY_OPTIONS = [
   ...severityLevels,
@@ -60,6 +66,37 @@ const ALLERGEN_CUSTOM_SEVERITY_OPTIONS = [
 const StarIcon = ({ filled }) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
+)
+
+const NoteIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+    <polyline points="14 2 14 8 20 8"/>
+    <line x1="16" y1="13" x2="8" y2="13"/>
+    <line x1="16" y1="17" x2="8" y2="17"/>
+    <polyline points="10 9 9 9 8 9"/>
+  </svg>
+)
+
+const TeamNotesIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    <line x1="9" y1="10" x2="15" y2="10"/>
+  </svg>
+)
+
+const MoreIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+    <circle cx="12" cy="5" r="1.5"/>
+    <circle cx="12" cy="12" r="1.5"/>
+    <circle cx="12" cy="19" r="1.5"/>
+  </svg>
+)
+
+const CheckIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+    <polyline points="20 6 9 17 4 12"/>
   </svg>
 )
 const SortIcon = ({ direction, active }) => (
@@ -77,7 +114,190 @@ const FilterIcon = ({ active }) => (
   </svg>
 )
 
-// Column Filter Dropdown Component
+// Mobile Card View Component
+const ChevronIcon = ({ expanded }) => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.25s' }}
+  >
+    <polyline points="6 9 12 15 18 9"/>
+  </svg>
+)
+
+const CatalogCard = ({
+  item,
+  idField,
+  isSelected,
+  isFavorite,
+  onToggleSelect,
+  onToggleFavorite,
+  onOpenNoteModal,
+  hasNote,
+  contribBadges,
+  teamNotes,
+  getSeverityClass,
+  fields,
+  isSupabaseConfigured,
+  onRemoveNote,
+  syncBusy,
+  onRemoveCustom,
+  getMyRowForItem,
+}) => {
+  const [expanded, setExpanded] = useState(false)
+
+  const id = item[idField]
+  const name = item.name || item.name
+  const route = item.route
+  const indication = item.indication
+  const severity = item.severity
+  const code = item[idField]
+
+  // Get main fields for header
+  const codeField = fields.find(f => f.key === 'code' || f.key === 'atc_code')
+  const titleField = fields.find(f => f.key === 'name')
+  const routeField = fields.find(f => f.key === 'route')
+  const indicationField = fields.find(f => f.key === 'indication')
+  const severityField = fields.find(f => f.key === 'severity')
+  const categoryField = fields.find(f => f.key === 'category')
+  const mechanismField = fields.find(f => f.key === 'mechanism')
+  const scientificField = fields.find(f => f.key === 'scientificName')
+
+  const hasTeamNotes = teamNotes && teamNotes.length > 0
+
+  return (
+    <div className={`catalog-card ${isSelected ? 'selected' : ''}`}>
+      {/* Card Header - always visible */}
+      <div className="card-header">
+        <div className="card-header-left">
+          <div className="card-name">{name}</div>
+          <div className="card-code">{codeField?.label}: {code}</div>
+          {item.route && (
+            <span className="card-route">{item.route}</span>
+          )}
+          {item.severity && (
+            <span className={`card-severity ${getSeverityClass(item.severity)}`}>
+              {item.severity}
+            </span>
+          )}
+        </div>
+        <div className="card-header-right">
+          {/* Custom badge */}
+          {item._custom && (
+            <span className="custom-catalog-badge" title="Añadido por ti">Tú</span>
+          )}
+          {/* Expand button */}
+          <button
+            className={`card-expand-btn ${expanded ? 'expanded' : ''}`}
+            onClick={() => setExpanded(!expanded)}
+            aria-expanded={expanded}
+            aria-label={expanded ? 'Colapsar detalles' : 'Ver más detalles'}
+          >
+            <ChevronIcon expanded={expanded} />
+          </button>
+        </div>
+      </div>
+
+      {/* Card Actions */}
+      <div className="card-actions">
+        <div className="card-action-left">
+          <button
+            className={`favorite-btn ${isFavorite ? 'active' : ''}`}
+            onClick={(e) => onToggleFavorite(id, e)}
+            aria-label={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+          >
+            <StarIcon filled={isFavorite} />
+          </button>
+          {item._custom && (
+            <button
+              className="btn-remove-custom"
+              onClick={() => onRemoveCustom(id)}
+              title="Quitar del catálogo"
+              style={{ width: 36, height: 36 }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        <div className="card-action-right">
+          {isSupabaseConfigured() && contribBadges && contribBadges.length > 0 && (
+            <div className="card-contrib-badges">
+              {contribBadges.slice(0, 2).map((badge, i) => (
+                <span key={i} className="card-contrib-badge">{badge}</span>
+              ))}
+              {contribBadges.length > 2 && (
+                <span className="card-contrib-badge">+{contribBadges.length - 2}</span>
+              )}
+            </div>
+          )}
+          <button
+            className={`card-select-btn ${isSelected ? 'is-selected' : 'not-selected'}`}
+            onClick={() => onToggleSelect(id)}
+          >
+            {isSelected ? '✓ Seleccionado' : 'Seleccionar'}
+          </button>
+        </div>
+      </div>
+
+      {/* Expanded Details */}
+      <div className={`card-details ${expanded ? 'expanded' : ''}`}>
+        <div className="card-details-inner">
+          {/* Additional fields */}
+          {fields.filter(f =>
+            f.key !== 'code' &&
+            f.key !== 'atc_code' &&
+            f.key !== 'name' &&
+            f.key !== 'route' &&
+            f.key !== 'indication' &&
+            f.key !== 'severity'
+          ).map(field => (
+            <div key={field.key} className="card-detail-row">
+              <span className="card-detail-label">{field.label}</span>
+              <span className="card-detail-value">
+                {field.key === 'mechanism' ? (
+                  <span className="mechanism-badge">{item[field.key]}</span>
+                ) : field.key === 'category' ? (
+                  <span className="category-badge">{item[field.key]}</span>
+                ) : field.key === 'scientificName' ? (
+                  <em style={{ color: 'var(--gray-500)', fontSize: '0.85rem' }}>{item[field.key] || '—'}</em>
+                ) : (
+                  item[field.key] || '—'
+                )}
+              </span>
+            </div>
+          ))}
+
+          {/* Team Notes */}
+          {isSupabaseConfigured() && hasTeamNotes && (
+            <div className="card-team-notes">
+              <div className="card-team-notes-title">Notas del equipo</div>
+              {teamNotes.map((note, i) => (
+                <div key={i} className="card-team-note">
+                  <span className="card-team-note-author">{note.author}: </span>
+                  {note.text}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Add Note Button */}
+          {isSupabaseConfigured() && (
+            <button
+              className="card-note-btn"
+              onClick={() => onOpenNoteModal(id)}
+            >
+              {hasNote ? '✏️ Editar mi nota' : '+ Añadir nota'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
 const ColumnFilterDropdown = ({ fieldKey, values, currentValue, onFilterChange }) => {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef(null)
@@ -133,6 +353,129 @@ const ColumnFilterDropdown = ({ fieldKey, values, currentValue, onFilterChange }
   )
 }
 
+// Inline Team Notes Component
+const TeamNotesCell = ({ notes, onAddNote, onRemoveNote, isMine, syncBusy }) => {
+  const [expanded, setExpanded] = useState(false)
+
+  if (!notes || notes.length === 0) {
+    return (
+      <button
+        type="button"
+        className="btn btn-xs btn-ghost"
+        onClick={onAddNote}
+        title="Añadir nota"
+      >
+        <NoteIcon />
+      </button>
+    )
+  }
+
+  return (
+    <div className="team-notes-inline">
+      <button
+        type="button"
+        className={`team-notes-toggle ${expanded ? 'expanded' : ''}`}
+        onClick={() => setExpanded(!expanded)}
+        title={expanded ? 'Ocultar notas' : `${notes.length} nota(s)`}
+      >
+        <TeamNotesIcon />
+        <span className="team-notes-count">{notes.length}</span>
+      </button>
+      {expanded && (
+        <div className="team-notes-dropdown">
+          {notes.map((note, i) => (
+            <div key={i} className="team-note-item">
+              <div className="team-note-header">
+                <span className="team-note-author">{note.author}</span>
+                {note.isMine && (
+                  <button
+                    type="button"
+                    className="btn-note-remove-small"
+                    onClick={() => onRemoveNote()}
+                    disabled={syncBusy}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              <p className="team-note-text">{note.text}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Row Actions Component
+const RowActions = ({
+  itemId,
+  isFavorite,
+  hasNote,
+  onToggleFavorite,
+  onOpenNoteModal,
+  onRemoveCustom,
+  isCustom,
+}) => {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('click', handleClickOutside)
+    return () => document.removeEventListener('click', handleClickOutside)
+  }, [])
+
+  return (
+    <div className="row-actions" ref={menuRef}>
+      {/* Favorite - direct toggle */}
+      <button
+        className={`action-btn favorite-action ${isFavorite ? 'active' : ''}`}
+        onClick={(e) => { e.stopPropagation(); onToggleFavorite() }}
+        title={isFavorite ? 'Quitar de favoritos' : 'Añadir a favoritos'}
+      >
+        <StarIcon filled={isFavorite} />
+      </button>
+
+      {/* Note - direct action */}
+      <button
+        className={`action-btn note-action ${hasNote ? 'has-note' : ''}`}
+        onClick={(e) => { e.stopPropagation(); onOpenNoteModal() }}
+        title={hasNote ? 'Editar mi nota' : 'Añadir nota'}
+      >
+        <NoteIcon />
+      </button>
+
+      {/* More menu */}
+      <div className="action-menu-wrapper">
+        <button
+          className={`action-btn more-action ${menuOpen ? 'active' : ''}`}
+          onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen) }}
+          title="Más opciones"
+        >
+          <MoreIcon />
+        </button>
+        {menuOpen && (
+          <div className="action-menu" onClick={(e) => e.stopPropagation()}>
+            {isCustom && (
+              <button
+                className="action-menu-item danger"
+                onClick={() => { onRemoveCustom(); setMenuOpen(false) }}
+              >
+                <span>✕</span> Quitar del catálogo
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // Catálogos disponibles
 const catalogs = [
   { 
@@ -158,22 +501,22 @@ const catalogs = [
 // Campos por catálogo
 const catalogFields = {
   medications: [
-    { key: 'atc_code', label: 'Código ATC' },
     { key: 'name', label: 'Sustancia' },
+    { key: 'atc_code', label: 'Código ATC' },
     { key: 'route', label: 'Vía' },
     { key: 'indication', label: 'Indicación' }
   ],
   manifestations: [
-    { key: 'code', label: 'Código' },
     { key: 'name', label: 'Manifestación' },
+    { key: 'code', label: 'Código' },
     { key: 'category', label: 'Sistema' },
     { key: 'mechanism', label: 'Mecanismo' },
     { key: 'severity', label: 'Severidad' },
     { key: 'description', label: 'Descripción' }
   ],
   allergens: [
-    { key: 'code', label: 'Código' },
     { key: 'name', label: 'Alimento' },
+    { key: 'code', label: 'Código' },
     { key: 'scientificName', label: 'Nombre Científico' },
     { key: 'group', label: 'Grupo' },
     { key: 'severity', label: 'Riesgo' },
@@ -189,6 +532,17 @@ function App() {
   )
   const [favorites, setFavorites] = useState(() => loadFavoritesInitial())
   const [userName, setUserName] = useState(() => safeGetItem(LS_USER) || '')
+
+  // Mobile detection
+  const [isMobile, setIsMobile] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 768)
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   /** Ítems añadidos manualmente (por catálogo), persistidos en localStorage */
   const [customCatalog, setCustomCatalog] = useState(() => loadCustomCatalogItems())
@@ -1111,6 +1465,49 @@ function App() {
               <div className="no-results-icon">🔍</div>
               <p>No se encontraron registros con los filtros seleccionados.</p>
             </div>
+          ) : isMobile ? (
+            /* Mobile Card View */
+            <div className="mobile-card-view">
+              {filteredData.map(item => {
+                const id = item[idField]
+                const row = contributionsByItem.get(id)
+                const myRow = getMyRowForItem(id)
+                const contribBadges = (row || [])
+                  .filter(r => r.selected)
+                  .map(r => collaboratorLabel(r))
+                const teamNotes = (row || [])
+                  .filter(r => r.note && String(r.note).trim())
+                  .map(r => ({
+                    author: collaboratorLabel(r),
+                    text: String(r.note).length > 80
+                      ? String(r.note).slice(0, 80) + '…'
+                      : String(r.note)
+                  }))
+
+                return (
+                  <CatalogCard
+                    key={id}
+                    item={item}
+                    idField={idField}
+                    isSelected={selectedIds.has(id)}
+                    isFavorite={favorites.has(id)}
+                    onToggleSelect={handleToggleSelect}
+                    onToggleFavorite={handleToggleFavorite}
+                    onOpenNoteModal={openNoteModal}
+                    hasNote={myRow?.note?.trim()}
+                    contribBadges={contribBadges}
+                    teamNotes={teamNotes}
+                    getSeverityClass={getSeverityClass}
+                    fields={fields}
+                    isSupabaseConfigured={isSupabaseConfigured}
+                    onRemoveNote={removeMyNoteForItem}
+                    syncBusy={syncBusy}
+                    onRemoveCustom={removeCustomFromCatalog}
+                    getMyRowForItem={getMyRowForItem}
+                  />
+                )
+              })}
+            </div>
           ) : (
             <table>
               <thead>
@@ -1120,23 +1517,21 @@ function App() {
                       type="checkbox"
                       checked={allFilteredSelected}
                       onChange={handleSelectAll}
+                      title="Seleccionar todos"
                     />
                   </th>
-                  <th>Fav</th>
-                  {isSupabaseConfigured() && (
-                    <>
-                      <th className="contrib-col">Marcado por</th>
-                      <th className="contrib-note-col">Notas del equipo</th>
-                    </>
-                  )}
                   {fields.map(f => (
-                    <th key={f.key} className="sortable-header" onClick={() => handleSort(f.key)}>
+                    <th
+                      key={f.key}
+                      className={`sortable-header ${f.key === 'name' ? 'name-col' : ''}`}
+                      onClick={() => handleSort(f.key)}
+                    >
                       <div className="th-content">
                         <span>{f.label}</span>
                         <div className="th-actions">
                           <SortIcon direction={sortDirection} active={sortColumn === f.key} />
-                          <ColumnFilterDropdown 
-                            fieldKey={f.key} 
+                          <ColumnFilterDropdown
+                            fieldKey={f.key}
                             values={getColumnUniqueValues(f.key)}
                             currentValue={columnFilters[f.key]}
                             onFilterChange={(val) => setColumnFilters(prev => ({...prev, [f.key]: val}))}
@@ -1145,129 +1540,85 @@ function App() {
                       </div>
                     </th>
                   ))}
+                  {isSupabaseConfigured() && (
+                    <th className="team-col" title="Notas del equipo">💬</th>
+                  )}
+                  <th className="actions-col" title="Acciones">···</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredData.map(item => (
-                  <tr 
-                    key={item[idField]} 
-                    className={selectedIds.has(item[idField]) ? 'selected' : ''}
-                  >
-                    <td className="checkbox-cell">
-                      <input
-                        type="checkbox"
-                        checked={selectedIds.has(item[idField])}
-                        onChange={() => handleToggleSelect(item[idField])}
-                      />
-                    </td>
-                    <td>
-                      <button
-                        className={`favorite-btn ${favorites.has(item[idField]) ? 'active' : ''}`}
-                        onClick={(e) => handleToggleFavorite(item[idField], e)}
-                      >
-                        <StarIcon filled={favorites.has(item[idField])} />
-                      </button>
-                    </td>
-                    {isSupabaseConfigured() && (
-                      <>
-                        <td className="contrib-cell">
-                          <div className="contrib-badges">
-                            {(contributionsByItem.get(item[idField]) || [])
-                              .filter((r) => r.selected)
-                              .map((r) => (
-                                <span key={r.user_key} className="contrib-badge" title={r.user_key}>
-                                  {collaboratorLabel(r)}
-                                </span>
-                              ))}
-                          </div>
-                        </td>
-                        <td className="contrib-notes-wrap">
-                          <div className="team-notes-block">
-                            {(contributionsByItem.get(item[idField]) || [])
-                              .filter((r) => r.note && String(r.note).trim())
-                              .map((r) => {
-                                const isMine = r.user_key === myUserKey
-                                const full = String(r.note)
-                                const short =
-                                  full.length > 140 ? `${full.slice(0, 140)}…` : full
-                                return (
-                                  <div key={r.user_key} className="team-note-entry">
-                                    <div className="team-note-byline">
-                                      <span className="team-note-author">{collaboratorLabel(r)}</span>
-                                      {isMine && (
-                                        <button
-                                          type="button"
-                                          className="btn-note-remove"
-                                          disabled={syncBusy}
-                                          onClick={() => removeMyNoteForItem(item[idField])}
-                                        >
-                                          Quitar la mía
-                                        </button>
-                                      )}
-                                    </div>
-                                    <p className="team-note-text" title={full.length > 140 ? full : undefined}>
-                                      {short}
-                                    </p>
-                                  </div>
-                                )
-                              })}
-                            {(contributionsByItem.get(item[idField]) || []).filter(
-                              (r) => r.note && String(r.note).trim()
-                            ).length === 0 && (
-                              <p className="team-notes-empty">Sin notas aún.</p>
-                            )}
-                          </div>
-                          <div className="contrib-note-actions">
-                            <button
-                              type="button"
-                              className="btn btn-sm btn-secondary"
-                              disabled={syncBusy}
-                              onClick={() => openNoteModal(item[idField])}
-                            >
-                              {getMyRowForItem(item[idField])?.note?.trim() ? 'Editar mi nota' : 'Añadir mi nota'}
-                            </button>
-                          </div>
-                        </td>
-                      </>
-                    )}
-                    {fields.map(f => (
-                      <td key={f.key}>
-                        {f.key === 'atc_code' || f.key === 'code' ? (
-                          <div className="code-cell-wrap">
-                            {item._custom && (
-                              <span className="custom-catalog-badge" title="Ítem añadido en este dispositivo">
-                                Tú
-                              </span>
-                            )}
-                            <span className="code-badge">{item[f.key]}</span>
-                            {item._custom && (
-                              <button
-                                type="button"
-                                className="btn-remove-custom"
-                                title="Quitar del catálogo local"
-                                onClick={() => removeCustomFromCatalog(item[idField])}
-                              >
-                                ✕
-                              </button>
-                            )}
-                          </div>
-                        ) : f.key === 'severity' ? (
-                          <span className={getSeverityClass(item[f.key])}>{item[f.key]}</span>
-                        ) : f.key === 'mechanism' ? (
-                          <span className="mechanism-badge">{item[f.key]}</span>
-                        ) : f.key === 'category' ? (
-                          <span className="category-badge">{item[f.key]}</span>
-                        ) : f.key === 'scientificName' ? (
-                          <em style={{color: 'var(--gray-500)', fontSize: '0.85rem'}}>
-                            {item[f.key] || '-'}
-                          </em>
-                        ) : (
-                          item[f.key]
-                        )}
+                {filteredData.map(item => {
+                  const itemId = item[idField]
+                  const row = contributionsByItem.get(itemId) || []
+                  const myRow = getMyRowForItem(itemId)
+                  const teamNotes = row.filter(r => r.note && String(r.note).trim())
+                  const hasNote = myRow?.note?.trim()
+
+                  return (
+                    <tr
+                      key={itemId}
+                      className={selectedIds.has(itemId) ? 'selected' : ''}
+                    >
+                      <td className="checkbox-cell">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(itemId)}
+                          onChange={() => handleToggleSelect(itemId)}
+                        />
                       </td>
-                    ))}
-                  </tr>
-                ))}
+                      {fields.map(f => (
+                        <td key={f.key}>
+                          {f.key === 'name' ? (
+                            <div className="name-cell">
+                              <span className="name-text">{item[f.key]}</span>
+                              {item._custom && (
+                                <span className="custom-catalog-badge" title="Añadido por ti">Tú</span>
+                              )}
+                            </div>
+                          ) : f.key === 'atc_code' || f.key === 'code' ? (
+                            <span className="code-badge">{item[f.key]}</span>
+                          ) : f.key === 'severity' ? (
+                            <span className={getSeverityClass(item[f.key])}>{item[f.key]}</span>
+                          ) : f.key === 'mechanism' ? (
+                            <span className="mechanism-badge">{item[f.key]}</span>
+                          ) : f.key === 'category' ? (
+                            <span className="category-badge">{item[f.key]}</span>
+                          ) : f.key === 'scientificName' ? (
+                            <em className="scientific-name">{item[f.key] || '—'}</em>
+                          ) : (
+                            item[f.key] || '—'
+                          )}
+                        </td>
+                      ))}
+                      {isSupabaseConfigured() && (
+                        <td className="team-cell">
+                          <TeamNotesCell
+                            notes={teamNotes.map(r => ({
+                              author: collaboratorLabel(r),
+                              text: String(r.note),
+                              isMine: r.user_key === myUserKey
+                            }))}
+                            onAddNote={() => openNoteModal(itemId)}
+                            onRemoveNote={() => removeMyNoteForItem(itemId)}
+                            isMine={Boolean(hasNote)}
+                            syncBusy={syncBusy}
+                          />
+                        </td>
+                      )}
+                      <td className="actions-cell">
+                        <RowActions
+                          itemId={itemId}
+                          isFavorite={favorites.has(itemId)}
+                          hasNote={Boolean(hasNote)}
+                          onToggleFavorite={() => handleToggleFavorite(itemId, { stopPropagation: () => {} })}
+                          onOpenNoteModal={() => openNoteModal(itemId)}
+                          onRemoveCustom={() => removeCustomFromCatalog(itemId)}
+                          isCustom={item._custom}
+                        />
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           )}
